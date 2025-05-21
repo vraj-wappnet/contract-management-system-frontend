@@ -24,7 +24,6 @@ import {
   Typography,
   Divider,
   Tooltip,
-  Badge,
 } from "antd";
 import {
   UserOutlined,
@@ -99,7 +98,6 @@ const EmployeesPage: React.FC = () => {
       current: currentPage,
       pageSize: pageSize,
     });
-
     fetchEmployees(currentPage, pageSize);
   };
 
@@ -176,24 +174,18 @@ const EmployeesPage: React.FC = () => {
         return (
           <Link to={`/employees/${record.id}`}>
             <Space>
-              <Badge
-                dot
-                color={record.status === "active" ? "#52c41a" : "#f5222d"}
-                offset={[-5, 30]}
+              <Avatar
+                icon={<UserOutlined />}
+                style={{
+                  backgroundColor:
+                    record.status === "active" ? "#2563eb" : "#d9d9d9",
+                  color: record.status === "active" ? "#fff" : "#595959",
+                }}
+                className="flex-shrink-0"
               >
-                <Avatar
-                  icon={<UserOutlined />}
-                  style={{
-                    backgroundColor:
-                      record.status === "active" ? "#2563eb" : "#d9d9d9",
-                    color: record.status === "active" ? "#fff" : "#595959",
-                  }}
-                  className="flex-shrink-0"
-                >
-                  {record.firstName?.[0]?.toUpperCase()}
-                  {record.lastName?.[0]?.toUpperCase()}
-                </Avatar>
-              </Badge>
+                {record.firstName?.[0]?.toUpperCase()}
+                {record.lastName?.[0]?.toUpperCase()}
+              </Avatar>
               <div className="flex flex-col">
                 <span className="text-gray-900 font-medium">
                   {displayName || record.email}
@@ -249,14 +241,7 @@ const EmployeesPage: React.FC = () => {
         );
       },
     },
-    {
-      title: "Manager",
-      key: "manager",
-      render: (_: unknown, record: User) => (
-        <Text>{record.manager?.name || <Text type="secondary">N/A</Text>}</Text>
-      ),
-      responsive: ["lg"] as "lg"[],
-    },
+
     {
       title: "Joined",
       key: "createdAt",

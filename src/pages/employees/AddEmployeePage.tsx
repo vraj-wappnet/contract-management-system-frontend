@@ -12,7 +12,6 @@ import {
   Typography,
   Divider,
   Space,
-  Avatar,
   Alert,
 } from "antd";
 import { toast } from "react-toastify";
@@ -21,7 +20,6 @@ import {
   UserOutlined,
   MailOutlined,
   LockOutlined,
-  TeamOutlined,
   IdcardOutlined,
   ApartmentOutlined,
 } from "@ant-design/icons";
@@ -131,11 +129,6 @@ const AddEmployeePage: React.FC = () => {
         >
           <div className="p-8">
             <div className="flex items-center mb-6">
-              <Avatar
-                size={48}
-                icon={<TeamOutlined />}
-                className="bg-blue-100 text-blue-600 mr-4"
-              />
               <div>
                 <Title level={2} className="!mb-1 !text-2xl sm:!text-3xl">
                   Add New Employee

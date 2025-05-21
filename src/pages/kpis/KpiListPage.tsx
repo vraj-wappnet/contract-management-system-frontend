@@ -101,9 +101,10 @@ const KpiListPage: React.FC = () => {
             </h2>
             <button
               onClick={() => navigate("/kpis/new")}
-              className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-transform transform hover:scale-105"
+              className="flex items-center gap-2 px-4 py-2 bg-blue-500 !text-white rounded-lg hover:bg-blue-700 transition-all transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              aria-label="Create new KPI"
             >
-              <PlusOutlined className="text-base" />
+              <PlusOutlined className="text-base !text-white" />
               Create KPI
             </button>
           </div>

@@ -109,7 +109,7 @@ const CategoriesListPage: React.FC = () => {
               <div className="flex items-center gap-3">
                 <Link to="/categories/new">
                   <Button
-                    className="bg-teal-600 text-white hover:bg-teal-700 border-none rounded-lg shadow-md transition-all transform hover:scale-105 h-10 px-4"
+                    className="bg-blue-500 text-white hover:bg-blue-700 border-none rounded-lg shadow-md transition-all transform hover:scale-105 h-10 px-4"
                     icon={<PlusOutlined />}
                     aria-label="Add new category"
                   >

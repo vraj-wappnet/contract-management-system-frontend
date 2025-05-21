@@ -143,7 +143,6 @@ const Home: React.FC = () => {
                 Corporate<span className="text-blue-500">MS</span>
               </h1>
             </motion.div>
-
             {/* Desktop Menu */}
             <div className="hidden md:flex space-x-8 items-center">
               {["Home", "Features"].map((item) => (
@@ -496,39 +495,6 @@ const Home: React.FC = () => {
                 <p className="text-gray-600">{stat.label}</p>
               </motion.div>
             ))}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-b from-white to-blue-50">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7 }}
-            viewport={{ once: true }}
-          >
-            <h2 className="text-3xl sm:text-4xl font-bold mb-6 text-gray-900">
-              Ready to Transform Your Business?
-            </h2>
-            <p className="text-lg mb-10 text-gray-600 max-w-3xl mx-auto">
-              Join thousands of companies that have improved their operations
-              with our Corporate Management System.
-            </p>
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="inline-block"
-            >
-              <Link
-                to="/register"
-                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-lg text-lg font-medium shadow-lg transition duration-200 inline-flex items-center"
-              >
-                Start Your Free Trial
-                <ArrowRight size={16} className="ml-2" />
-              </Link>
-            </motion.div>
           </motion.div>
         </div>
       </section>

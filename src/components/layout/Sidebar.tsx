@@ -2,6 +2,8 @@ import React from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAppSelector } from "../../store/store";
 import { cn } from "../../lib/utils";
+import { motion } from "framer-motion";
+
 import {
   LayoutDashboard,
   Users,
@@ -33,7 +35,7 @@ const navItems: NavItem[] = [
         title: "All Employees",
         path: "/employees",
         icon: Users,
-        roles: ["admin", "manager"],
+        roles: ["admin"],
       },
       {
         title: "Add Employee",
@@ -125,7 +127,7 @@ const navItems: NavItem[] = [
         title: "Feedback Requests",
         path: "/feedback/requests",
         icon: Inbox,
-        roles: ["manager"],
+        roles: ["manager", "admin"],
       },
       {
         title: "Manage Requests",
@@ -278,7 +280,17 @@ const Sidebar: React.FC<SidebarNavProps> = ({ isOpen, onClose }) => {
     >
       <div className="flex flex-col flex-1">
         <div className="flex items-center h-16 px-4 border-b border-gray-200 flex-shrink-0">
-          <h1 className="text-xl font-bold text-primary">HR Analytics</h1>
+          <motion.div
+            className="flex items-center"
+            whileHover={{ scale: 1.05 }}
+            transition={{ type: "spring", stiffness: 400, damping: 10 }}
+          >
+            <h1
+              className={`text-xl font-bold tracking-tight ${"text-blue-900"}`}
+            >
+              Corporate<span className="text-blue-500">MS</span>
+            </h1>
+          </motion.div>{" "}
         </div>
 
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">

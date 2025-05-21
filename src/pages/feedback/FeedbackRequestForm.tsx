@@ -1,14 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { Form, message, Spin, Button, Card, DatePicker, Modal, Space, Typography, Select, Input, Switch } from 'antd';
-import { LoadingOutlined, TeamOutlined, UserOutlined } from '@ant-design/icons';
+import { Form } from 'antd';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
 import api from '../../services/api';
 import { createFeedbackRequest, updateFeedbackRequest } from '../../api/feedbackApi';
-
-const { Option } = Select;
 
 interface User {
   id: string;
@@ -23,8 +20,6 @@ interface User {
 type FeedbackType = 'peer' | 'manager' | 'self' | 'upward' | '360';
 type RequestStatus = 'pending' | 'in-progress' | 'completed' | 'cancelled';
 
-// Feedback type definitions
-
 interface FeedbackFormValues {
   type: FeedbackType;
   recipientId: string;
@@ -34,6 +29,22 @@ interface FeedbackFormValues {
   message: string;
   status: RequestStatus;
   cycleId?: string;
+}
+
+interface FeedbackCycle {
+  id: string;
+  name: string;
+  description: string;
+  type: string;
+  startDate: string;
+  endDate: string;
+  status: string;
+  feedbackTemplates: {
+    questions: string[];
+    ratingCategories: string[];
+  } | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 const FeedbackRequestForm: React.FC = () => {
@@ -52,28 +63,13 @@ const FeedbackRequestForm: React.FC = () => {
     cycleId: undefined
   };
   
-  interface FeedbackCycle {
-    id: string;
-    name: string;
-    description: string;
-    type: string;
-    startDate: string;
-    endDate: string;
-    status: string;
-    feedbackTemplates: {
-      questions: string[];
-      ratingCategories: string[];
-    } | null;
-    createdAt: string;
-    updatedAt: string;
-  }
-
   const [employees, setEmployees] = useState<User[]>([]);
   const [cycles, setCycles] = useState<FeedbackCycle[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingCycles, setIsLoadingCycles] = useState(false);
   const [isFormLoading, setIsFormLoading] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   const fetchEmployees = useCallback(async () => {
     try {
@@ -90,7 +86,7 @@ const FeedbackRequestForm: React.FC = () => {
       }
     } catch (error) {
       console.error('Error fetching employees:', error);
-      message.error('Failed to load employees');
+      setToast({ message: 'Failed to load employees', type: 'error' });
     } finally {
       setIsLoading(false);
     }
@@ -105,7 +101,6 @@ const FeedbackRequestForm: React.FC = () => {
           limit: 10
         }
       });
-      // Filter active cycles on the client side if needed
       const activeCycles = response.data.items.filter((cycle: FeedbackCycle) => cycle.status === 'active');
       response.data.items = activeCycles;
       if (response.data?.items) {
@@ -113,7 +108,7 @@ const FeedbackRequestForm: React.FC = () => {
       }
     } catch (error) {
       console.error('Error fetching feedback cycles:', error);
-      message.error('Failed to load feedback cycles');
+      setToast({ message: 'Failed to load feedback cycles', type: 'error' });
     } finally {
       setIsLoadingCycles(false);
     }
@@ -129,36 +124,6 @@ const FeedbackRequestForm: React.FC = () => {
       });
     }
   }, [currentUser?.id, form, fetchEmployees, fetchCycles]);
-
-  if (!currentUser) {
-    return null;
-  }
-
-  useEffect(() => {
-    if (!id || !currentUser?.id) return;
-    
-    const fetchRequest = async () => {
-      try {
-        setIsFormLoading(true);
-        const response = await api.get(`/feedback/requests/${id}`);
-        const request = response.data;
-        
-        form.setFieldsValue({
-          ...request,
-          dueDate: dayjs(request.dueDate)
-        });
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Error loading feedback request';
-        message.error(errorMessage);
-        console.error('Error fetching feedback request:', error);
-        navigate('/feedback/requests');
-      } finally {
-        setIsFormLoading(false);
-      }
-    };
-    
-    fetchRequest();
-  }, [id, form, navigate, currentUser?.id]);
 
   const handleSelfFeedbackChange = useCallback((checked: boolean) => {
     if (checked) {
@@ -183,313 +148,422 @@ const FeedbackRequestForm: React.FC = () => {
     setIsModalVisible(false);
   }, []);
 
+  useEffect(() => {
+    if (!id || !currentUser?.id) return;
+    
+    const fetchRequest = async () => {
+      try {
+        setIsFormLoading(true);
+        const response = await api.get(`/feedback/requests/${id}`);
+        const request = response.data;
+        
+        form.setFieldsValue({
+          ...request,
+          dueDate: dayjs(request.dueDate)
+        });
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Error loading feedback request';
+        setToast({ message: errorMessage, type: 'error' });
+        console.error('Error fetching feedback request:', error);
+        navigate('/feedback/requests');
+      } finally {
+        setIsFormLoading(false);
+      }
+    };
+    
+    fetchRequest();
+  }, [id, form, navigate, currentUser?.id]);
+
   const handleSubmit = useCallback(async (values: FeedbackFormValues) => {
     if (!currentUser?.id) {
-      message.error('User not authenticated');
-      return;
-    }
-
-    // Ensure subjectId is always set to the current user's ID
-    values.subjectId = currentUser.id;
-
-    // Ensure type is one of the valid values
-    const validTypes = ['peer', 'manager', 'self', 'upward', '360'] as const;
-    if (!validTypes.includes(values.type as any)) {
-      message.error('Invalid feedback type');
-      return;
-    }
-
-    // Ensure recipient is selected
-    if (!values.recipientId) {
-      message.error('Please select a recipient');
+      setToast({ message: 'User not authenticated', type: 'error' });
       return;
     }
 
     // Client-side validation for due date
     if (values.dueDate && values.dueDate.isBefore(dayjs())) {
-      message.error('Due date must be in the future');
+      setToast({ message: 'Due date must be in the future', type: 'error' });
       return;
     }
 
     try {
       setIsLoading(true);
-      
-      // Prepare the request data
+
+      // Base request data
       const requestData = {
         recipientId: values.recipientId,
-        subjectId: values.subjectId, // The user the feedback is about
-        requesterId: currentUser.id,  // The user making the request
         dueDate: values.dueDate.toISOString(),
         message: values.message || undefined,
-        cycleId: values.cycleId,
-        type: values.type,
-        status: 'pending' as const
+        status: 'pending' as const,
       };
 
       if (id) {
-        // Update existing request
-        await updateFeedbackRequest(id, requestData);
-        message.success('Feedback request updated successfully');
+        // For updates, only include allowed fields
+        await updateFeedbackRequest(id, {
+          recipientId: requestData.recipientId,
+          dueDate: requestData.dueDate,
+          message: requestData.message,
+          status: requestData.status,
+        });
+        setToast({ message: 'Feedback request updated successfully', type: 'success' });
       } else {
-        // Create new request
-        await createFeedbackRequest(requestData);
-        message.success('Feedback request created successfully');
+        // For creation, include all fields
+        await createFeedbackRequest({
+          ...requestData,
+          type: values.type,
+          cycleId: values.cycleId,
+          subjectId: currentUser.id,
+          requesterId: currentUser.id,
+        });
+        setToast({ message: 'Feedback request created successfully', type: 'success' });
       }
-      
-      navigate('/feedback/requests');
-    } catch (error: any) {
-      console.error('Error submitting feedback request:', error);
-      const errorMessage = error.response?.data?.message || 'Failed to submit feedback request';
-      message.error(Array.isArray(errorMessage) ? errorMessage.join(', ') : errorMessage);
-    } finally {
-      setIsLoading(false);
-    }
 
-    try {
-      setIsLoading(true);
-      
-      const requestData = {
-        ...values,
-        dueDate: values.dueDate.toISOString(),
-        status: 'pending' as const
-      };
-      
-      if (id) {
-        await updateFeedbackRequest(id, requestData);
-        message.success('Feedback request updated successfully');
-      } else {
-        await createFeedbackRequest(requestData);
-        message.success('Feedback request created successfully');
-      }
-      
       navigate('/feedback/requests');
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to submit feedback request';
-      message.error(errorMessage);
+    } catch (error: unknown) {
       console.error('Error submitting feedback request:', error);
+      let errorMessage = 'Failed to submit feedback request';
+      if (typeof error === 'object' && error !== null && 'response' in error) {
+        const err = error as { response?: { data?: { message?: string | string[] } } };
+        const msg = err.response?.data?.message;
+        errorMessage = Array.isArray(msg) ? msg.join(', ') : (msg || errorMessage);
+      }
+      setToast({ message: errorMessage, type: 'error' });
     } finally {
       setIsLoading(false);
     }
   }, [currentUser?.id, id, navigate]);
 
+  // Auto-dismiss toast after 3 seconds
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
+
+  if (!currentUser) {
+    return null;
+  }
+
   if (loadingUser || isFormLoading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', padding: '24px' }}>
-        <Spin indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} />
+      <div className="flex justify-center items-center min-h-screen bg-gray-50">
+        <svg
+          className="animate-spin h-8 w-8 text-blue-600"
+          fill="none"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <circle
+            className="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            strokeWidth="4"
+          />
+          <path
+            className="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+          />
+        </svg>
       </div>
     );
   }
 
   return (
-    <div className="feedback-request-form">
-      <Card
-        title={
-          <Typography.Title level={4}>
+    <div className="min-h-screen bg-gray-50 py-10 px-4 sm:px-6 lg:px-8 font-sans">
+      <div className="max-w-2xl mx-auto">
+        {/* Toast Notification */}
+        {toast && (
+          <div
+            className={`fixed top-4 right-4 px-4 py-2 rounded-lg shadow-lg transition-all duration-300 transform ${
+              toast.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+            }`}
+          >
+            {toast.message}
+          </div>
+        )}
+
+        {/* Form Card */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 sm:p-8 transition-all duration-300 hover:shadow-md">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">
             {id ? 'Update Feedback Request' : 'New Feedback Request'}
-          </Typography.Title>
-        }
-      >
-        <Form
-          form={form}
-          layout="vertical"
-          initialValues={initialValues}
-          onFinish={handleSubmit}
-        >
-          <Form.Item
-            name="type"
-            label="Feedback Type"
-            rules={[{ required: true, message: 'Please select feedback type' }]}
+          </h2>
+          <Form
+            form={form}
+            layout="vertical"
+            initialValues={initialValues}
+            onFinish={handleSubmit}
+            className="space-y-6"
           >
-            <Select placeholder="Select feedback type">
-              <Option value="peer">Peer Feedback</Option>
-              <Option value="manager">Manager Feedback</Option>
-              <Option value="self">Self Feedback</Option>
-              <Option value="upward">Upward Feedback</Option>
-              <Option value="360">360° Feedback</Option>
-            </Select>
-          </Form.Item>
-
-          <Form.Item
-            name="isSelfFeedback"
-            label="Request Self-Feedback"
-            valuePropName="checked"
-          >
-            <Switch
-              checkedChildren={<UserOutlined />}
-              unCheckedChildren={<TeamOutlined />}
-              onChange={handleSelfFeedbackChange}
-            />
-          </Form.Item>
-
-          <Form.Item
-            name="recipientId"
-            label="Recipient"
-            rules={[{ required: true, message: 'Please select a recipient' }]}
-          >
-            <Select
-              placeholder="Select a recipient"
-              loading={isLoading}
-              style={{ width: '100%' }}
-              optionFilterProp="children"
-              filterOption={(input, option) => 
-                String(option?.children ?? '').toLowerCase().includes(input.toLowerCase())
+            <Form.Item
+              name="type"
+              label={
+                <label className="block text-sm font-semibold text-gray-700">
+                  Feedback Type <span className="text-red-500">*</span>
+                </label>
               }
-              notFoundContent={isLoading ? <Spin size="small" /> : "No employees found"}
+              rules={[{ required: true, message: 'Please select feedback type' }]}
             >
-              {employees.map((employee) => {
-                const fullName = employee.name || `${employee.firstName || ''} ${employee.lastName || ''}`.trim();
-                const email = employee.email || '';
-                
-                return (
-                  <Option key={employee.id} value={employee.id}>
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <div style={{ marginRight: 12 }}>
-                        {employee.avatar ? (
-                          <img 
-                            src={employee.avatar} 
-                            alt={fullName} 
-                            style={{ width: 24, height: 24, borderRadius: '50%' }} 
-                          />
-                        ) : (
-                          <div style={{
-                            width: 24,
-                            height: 24,
-                            borderRadius: '50%',
-                            backgroundColor: '#f0f2f5',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: '#666'
-                          }}>
-                            <UserOutlined style={{ fontSize: 12 }} />
-                          </div>
-                        )}
-                      </div>
-                      <div>
-                        <div style={{ fontWeight: 500 }}>{fullName}</div>
-                        <div style={{ fontSize: 12, color: '#666' }}>
-                          {email}
-                          {employee.role && (
-                            <span style={{ 
-                              marginLeft: 8, 
-                              padding: '2px 6px', 
-                              background: '#f0f2f5', 
-                              borderRadius: 4, 
-                              fontSize: 11 
-                            }}>
-                              {employee.role}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </Option>
-                );
-              })}
-            </Select>
-          </Form.Item>
+              <select
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                aria-required="true"
+              >
+                <option value="" disabled>Select feedback type</option>
+                <option value="peer">Peer Feedback</option>
+                <option value="manager">Manager Feedback</option>
+                <option value="self">Self Feedback</option>
+                <option value="upward">Upward Feedback</option>
+                <option value="360">360° Feedback</option>
+              </select>
+            </Form.Item>
 
-          <Form.Item
-            name="dueDate"
-            label="Due Date"
-            rules={[
-              { required: true, message: 'Please select due date' },
-              {
-                validator: (_, value) => {
-                  if (!value || value.isAfter(dayjs())) {
-                    return Promise.resolve();
-                  }
-                  return Promise.reject(new Error('Due date must be in the future'));
+            <Form.Item
+              name="isSelfFeedback"
+              label={
+                <label className="block text-sm font-semibold text-gray-700">
+                  Request Self-Feedback
+                </label>
+              }
+              valuePropName="checked"
+            >
+              <input
+                type="checkbox"
+                onChange={(e) => handleSelfFeedbackChange(e.target.checked)}
+                className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="recipientId"
+              label={
+                <label className="block text-sm font-semibold text-gray-700">
+                  Recipient <span className="text-red-500">*</span>
+                </label>
+              }
+              rules={[{ required: true, message: 'Please select a recipient' }]}
+            >
+              <div className="relative">
+                <select
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white appearance-none"
+                  disabled={isLoading}
+                  aria-required="true"
+                >
+                  <option value="" disabled>Select a recipient</option>
+                  {employees.map((employee) => {
+                    const fullName = employee.name || `${employee.firstName || ''} ${employee.lastName || ''}`.trim();
+                    return (
+                      <option key={employee.id} value={employee.id}>
+                        {fullName} ({employee.email})
+                      </option>
+                    );
+                  })}
+                </select>
+                {isLoading && (
+                  <svg
+                    className="animate-spin h-5 w-5 text-blue-600 absolute right-3 top-2.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
+                  </svg>
+                )}
+              </div>
+            </Form.Item>
+
+            <Form.Item
+              name="dueDate"
+              label={
+                <label className="block text-sm font-semibold text-gray-700">
+                  Due Date <span className="text-red-500">*</span>
+                </label>
+              }
+              rules={[
+                { required: true, message: 'Please select due date' },
+                {
+                  validator: (_, value) => {
+                    if (!value || value.isAfter(dayjs())) {
+                      return Promise.resolve();
+                    }
+                    return Promise.reject(new Error('Due date must be in the future'));
+                  },
                 },
-              },
-            ]}
-          >
-            <DatePicker
-              style={{ width: '100%' }}
-              disabledDate={(current) => {
-                // Disable dates before today
-                return current && current < dayjs().startOf('day');
-              }}
-            />
-          </Form.Item>
-
-          <Form.Item
-            name="cycleId"
-            label="Feedback Cycle"
-            rules={[{ required: true, message: 'Please select a feedback cycle' }]}
-          >
-            <Select
-              placeholder="Select feedback cycle"
-              loading={isLoadingCycles}
-              showSearch
-              optionFilterProp="children"
-              filterOption={(input, option) => {
-                const children = option?.children ? String(option.children) : '';
-                return children.toLowerCase().includes(input.toLowerCase());
-              }}
+              ]}
             >
-              {cycles.map((cycle) => {
-                const cycleLabel = (
-                  <div>
-                    <div style={{ fontWeight: 500 }}>{cycle.name}</div>
-                    <div style={{ fontSize: 12, color: '#666' }}>
-                      {new Date(cycle.startDate).toLocaleDateString()} - {new Date(cycle.endDate).toLocaleDateString()}
-                      <span style={{ 
-                        marginLeft: 8, 
-                        padding: '2px 6px', 
-                        background: cycle.status === 'active' ? '#e6f7ff' : '#f0f0f0',
-                        color: cycle.status === 'active' ? '#1890ff' : '#666',
-                        borderRadius: 4, 
-                        fontSize: 11,
-                        textTransform: 'capitalize'
-                      }}>
-                        {cycle.status}
-                      </span>
-                    </div>
-                  </div>
-                );
+              <input
+                type="date"
+                min={dayjs().format('YYYY-MM-DD')}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                aria-required="true"
+              />
+            </Form.Item>
 
-                return (
-                  <Option key={cycle.id} value={cycle.id} label={cycle.name}>
-                    {cycleLabel}
-                  </Option>
-                );
-              })}
-            </Select>
-          </Form.Item>
+            <Form.Item
+              name="cycleId"
+              label={
+                <label className="block text-sm font-semibold text-gray-700">
+                  Feedback Cycle <span className="text-red-500">*</span>
+                </label>
+              }
+              rules={[{ required: true, message: 'Please select a feedback cycle' }]}
+            >
+              <div className="relative">
+                <select
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white appearance-none"
+                  disabled={isLoadingCycles}
+                  aria-required="true"
+                >
+                  <option value="" disabled>Select feedback cycle</option>
+                  {cycles.map((cycle) => (
+                    <option key={cycle.id} value={cycle.id}>
+                      {cycle.name} ({new Date(cycle.startDate).toLocaleDateString()} - {new Date(cycle.endDate).toLocaleDateString()})
+                    </option>
+                  ))}
+                </select>
+                {isLoadingCycles && (
+                  <svg
+                    className="animate-spin h-5 w-5 text-blue-600 absolute right-3 top-2.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
+                  </svg>
+                )}
+              </div>
+            </Form.Item>
 
-          <Form.Item
-            name="message"
-            label="Message to Recipient"
-            rules={[{ required: true, message: 'Please enter a message' }]}
-          >
-            <Input.TextArea rows={4} placeholder="Enter your message to the recipient" />
-          </Form.Item>
+            <Form.Item
+              name="message"
+              label={
+                <label className="block text-sm font-semibold text-gray-700">
+                  Message to Recipient <span className="text-red-500">*</span>
+                </label>
+              }
+              rules={[{ required: true, message: 'Please enter a message' }]}
+            >
+              <textarea
+                rows={4}
+                placeholder="Enter your message to the recipient"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+                aria-required="true"
+              />
+            </Form.Item>
 
-          <Form.Item>
-            <Space>
-              <Button type="primary" htmlType="submit" loading={isLoading}>
-                {id ? 'Update' : 'Submit'}
-              </Button>
-              <Button onClick={() => setIsModalVisible(true)} loading={isLoading}>
-                Cancel
-              </Button>
-            </Space>
-          </Form.Item>
-        </Form>
-        <Modal
-          title="Cancel Request"
-          open={isModalVisible}
-          onOk={handleCancel}
-          onCancel={handleModalCancel}
-          okText="Yes, Cancel"
-          cancelText="No, Continue"
-        >
-          <Typography.Text>
-            Are you sure you want to cancel this request? Any unsaved changes will be lost.
-          </Typography.Text>
-        </Modal>
-      </Card>
+            <Form.Item>
+              <div className="flex gap-4">
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  aria-label={id ? 'Update feedback request' : 'Submit feedback request'}
+                >
+                  {isLoading && (
+                    <svg
+                      className="animate-spin h-5 w-5 text-white"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
+                    </svg>
+                  )}
+                  {id ? 'Update' : 'Submit'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsModalVisible(true)}
+                  disabled={isLoading}
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg shadow-sm hover:bg-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  aria-label="Cancel feedback request"
+                >
+                  Cancel
+                </button>
+              </div>
+            </Form.Item>
+          </Form>
+
+          {/* Cancel Confirmation Modal */}
+          {isModalVisible && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl transform transition-all duration-300 animate-fadeIn">
+                <h2 className="text-xl font-bold text-gray-900 mb-4">Cancel Request</h2>
+                <p className="text-gray-600 mb-6">
+                  Are you sure you want to cancel this request? Any unsaved changes will be lost.
+                </p>
+                <div className="flex justify-end gap-3">
+                  <button
+                    onClick={handleModalCancel}
+                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500"
+                    aria-label="Continue editing"
+                  >
+                    No, Continue
+                  </button>
+                  <button
+                    onClick={handleCancel}
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500"
+                    aria-label="Confirm cancel"
+                  >
+                    Yes, Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Inline Animation Styles */}
+      <style>
+        {`
+          @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+          }
+          .animate-fadeIn {
+            animation: fadeIn 0.3s ease-out;
+          }
+        `}
+      </style>
     </div>
   );
 };

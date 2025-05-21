@@ -23,7 +23,6 @@ import {
   TeamOutlined,
   MailOutlined,
   PhoneOutlined,
-  IdcardOutlined,
   ApartmentOutlined,
 } from "@ant-design/icons";
 
@@ -403,13 +402,6 @@ const DepartmentEmployeesPage: React.FC = () => {
                 </Text>
               </div>
             </div>
-            <Button
-              type="primary"
-              icon={<IdcardOutlined />}
-              onClick={() => navigate("/employees/add")}
-            >
-              Add Team Member
-            </Button>
           </div>
 
           <Card className="border-0 shadow-sm" bodyStyle={{ padding: 0 }}>

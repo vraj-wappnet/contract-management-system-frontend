@@ -2,7 +2,10 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import { getFeedbackRequests } from "../../api/feedbackApi";
-import type { FeedbackRequest, RequestStatus } from "../../types/feedback.types";
+import type {
+  FeedbackRequest,
+  RequestStatus,
+} from "../../types/feedback.types";
 import { FeedbackType } from "../../types/feedback.types";
 import { formatDistanceToNow } from "date-fns";
 
@@ -111,10 +114,11 @@ const FeedbackRequests: React.FC = () => {
           <p className="text-gray-600">View and manage feedback requests</p>
         </div>
         <button
-          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+          className="flex items-center px-4 py-2 bg-blue-500 !text-white rounded-lg shadow-md hover:bg-blue-700 transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           onClick={() => navigate("/feedback/requests/new")}
+          aria-label="Create new feedback request"
         >
-          <PlusOutlined className="mr-2" /> New Request
+          <PlusOutlined className="mr-2 !text-white" /> New Request
         </button>
       </div>
 
@@ -131,9 +135,6 @@ const FeedbackRequests: React.FC = () => {
                   Type
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Subject
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -147,13 +148,19 @@ const FeedbackRequests: React.FC = () => {
             <tbody className="bg-white divide-y divide-gray-200">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
+                  <td
+                    colSpan={6}
+                    className="px-6 py-4 text-center text-gray-500"
+                  >
                     Loading...
                   </td>
                 </tr>
               ) : requests.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
+                  <td
+                    colSpan={6}
+                    className="px-6 py-4 text-center text-gray-500"
+                  >
                     No feedback requests found
                   </td>
                 </tr>
@@ -162,14 +169,6 @@ const FeedbackRequests: React.FC = () => {
                   <tr key={request.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4">
                       <div className="flex items-center">
-                        <img
-                          src={request.requester?.avatar}
-                          alt=""
-                          className="w-8 h-8 rounded-full mr-2"
-                          onError={(e) => {
-                            e.currentTarget.src = `https://ui-avatars.com/api/?name=${request.requester?.firstName}&size=32`;
-                          }}
-                        />
                         <div>
                           <p className="text-sm font-medium text-gray-900">
                             {request.requester?.firstName}{" "}
@@ -194,27 +193,6 @@ const FeedbackRequests: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex items-center">
-                        <img
-                          src={request.subject?.avatar}
-                          alt=""
-                          className="w-8 h-8 rounded-full mr-2"
-                          onError={(e) => {
-                            e.currentTarget.src = `https://ui-avatars.com/api/?name=${request.subject?.firstName}&size=32`;
-                          }}
-                        />
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">
-                            {request.subject?.firstName}{" "}
-                            {request.subject?.lastName}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {request.subject?.position}
-                          </p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
                       <span
                         className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${getStatusColor(
                           request.status
@@ -231,10 +209,9 @@ const FeedbackRequests: React.FC = () => {
                         {new Date(request.dueDate) < new Date() &&
                         request.status === "pending"
                           ? "Overdue"
-                          : `in ${formatDistanceToNow(
-                              new Date(request.dueDate),
-                              { addSuffix: true }
-                            )}`}
+                          : ` ${formatDistanceToNow(new Date(request.dueDate), {
+                              addSuffix: true,
+                            })}`}
                       </p>
                     </td>
                     <td className="px-6 py-4">
@@ -242,31 +219,35 @@ const FeedbackRequests: React.FC = () => {
                         <button
                           className="text-gray-500 hover:text-gray-700"
                           title="View Details"
-                          onClick={() => navigate(`/feedback/requests/${request.id}`)}
+                          onClick={() =>
+                            navigate(`/feedback/requests/${request.id}`)
+                          }
                         >
                           <EyeOutlined className="w-5 h-5" />
                         </button>
-
                         {request.status === "pending" &&
                           request.recipientId === user?.id && (
                             <>
                               <button
                                 className="text-green-500 hover:text-green-700"
                                 title="Accept Request"
-                                onClick={() => handleRespondToRequest(request.id, true)}
+                                onClick={() =>
+                                  handleRespondToRequest(request.id, true)
+                                }
                               >
                                 <CheckOutlined className="w-5 h-5" />
                               </button>
                               <button
                                 className="text-red-500 hover:text-red-700"
                                 title="Decline Request"
-                                onClick={() => handleRespondToRequest(request.id, false)}
+                                onClick={() =>
+                                  handleRespondToRequest(request.id, false)
+                                }
                               >
                                 <CloseOutlined className="w-5 h-5" />
                               </button>
                             </>
                           )}
-
                         {request.status === "pending" &&
                           request.requesterId === user?.id && (
                             <>
@@ -274,7 +255,9 @@ const FeedbackRequests: React.FC = () => {
                                 className="text-blue-500 hover:text-blue-700"
                                 title="Edit"
                                 onClick={() =>
-                                  navigate(`/feedback/requests/${request.id}/edit`)
+                                  navigate(
+                                    `/feedback/requests/${request.id}/edit`
+                                  )
                                 }
                               >
                                 <EditOutlined className="w-5 h-5" />
