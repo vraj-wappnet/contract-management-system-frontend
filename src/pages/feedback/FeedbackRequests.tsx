@@ -13,8 +13,6 @@ import { formatDistanceToNow } from "date-fns";
 import {
   PlusOutlined,
   EyeOutlined,
-  CheckOutlined,
-  CloseOutlined,
   EditOutlined,
   DeleteOutlined,
 } from "@ant-design/icons";
@@ -91,15 +89,6 @@ const FeedbackRequests: React.FC = () => {
         return "360°";
       default:
         return type;
-    }
-  };
-
-  const handleRespondToRequest = async (requestId: string, accept: boolean) => {
-    try {
-      console.log(`Request ${requestId} ${accept ? "accepted" : "declined"}`);
-      fetchRequests(); // Refresh the list
-    } catch (error) {
-      console.error("Error responding to request:", error);
     }
   };
 
@@ -225,29 +214,7 @@ const FeedbackRequests: React.FC = () => {
                         >
                           <EyeOutlined className="w-5 h-5" />
                         </button>
-                        {request.status === "pending" &&
-                          request.recipientId === user?.id && (
-                            <>
-                              <button
-                                className="text-green-500 hover:text-green-700"
-                                title="Accept Request"
-                                onClick={() =>
-                                  handleRespondToRequest(request.id, true)
-                                }
-                              >
-                                <CheckOutlined className="w-5 h-5" />
-                              </button>
-                              <button
-                                className="text-red-500 hover:text-red-700"
-                                title="Decline Request"
-                                onClick={() =>
-                                  handleRespondToRequest(request.id, false)
-                                }
-                              >
-                                <CloseOutlined className="w-5 h-5" />
-                              </button>
-                            </>
-                          )}
+
                         {request.status === "pending" &&
                           request.requesterId === user?.id && (
                             <>
