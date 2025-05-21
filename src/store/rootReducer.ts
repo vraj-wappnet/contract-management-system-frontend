@@ -4,7 +4,6 @@ import storage from "redux-persist/lib/storage";
 
 import authReducer from "./slices/authSlice";
 import userReducer from "./slices/userSlice";
-import okrReducer from "./slices/okrSlice";
 import kpiReducer from "./slices/kpiSlice";
 import feedbackReducer from "./slices/feedbackSlice";
 
@@ -18,7 +17,6 @@ const authPersistConfig = {
 const appReducer = combineReducers({
   auth: persistReducer(authPersistConfig, authReducer),
   users: userReducer,
-  okrs: okrReducer,
   kpis: kpiReducer,
   feedback: feedbackReducer,
 });

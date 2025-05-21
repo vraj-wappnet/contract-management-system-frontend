@@ -31,17 +31,6 @@ const api = axios.create({
   timeout: 10000, // 10 seconds
 });
 
-// Custom request config type
-type CustomAxiosRequestConfig = {
-  _retry?: boolean;
-  [key: string]: unknown;
-  headers?: Record<string, string>;
-  method?: string;
-  url?: string;
-  params?: unknown;
-  data?: unknown;
-};
-
 // Add a request interceptor to add the auth token to requests
 api.interceptors.request.use(
   (config) => {
@@ -77,7 +66,7 @@ api.interceptors.request.use(
 
 // Add a response interceptor for better error handling
 api.interceptors.response.use(
-  (response: any) => {
+  (response: import("axios").AxiosResponse) => {
     console.log(
       `[API Response] ${response.config?.method?.toUpperCase() || "GET"} ${
         response.config?.url
@@ -89,7 +78,7 @@ api.interceptors.response.use(
     );
     return response;
   },
-  (error: any) => {
+  (error: import("axios").AxiosError) => {
     if (error.response) {
       // The request was made and the server responded with a status code
       // that falls out of the range of 2xx

@@ -1,10 +1,10 @@
-import type { TablePaginationConfig } from 'antd/es/table';
-import type { FilterValue, SorterResult } from 'antd/es/table/interface';
+import type { TablePaginationConfig } from "antd/es/table";
+import type { FilterValue, SorterResult } from "antd/es/table/interface";
 
 export interface TableParams<T> {
   pagination?: TablePaginationConfig;
   sortField?: keyof T;
-  sortOrder?: 'ascend' | 'descend' | null;
+  sortOrder?: "ascend" | "descend" | null;
   filters?: Record<string, FilterValue | null>;
 }
 
@@ -17,7 +17,7 @@ export const getTableParams = <T>(
       current: 1,
       pageSize: defaultPageSize,
       showSizeChanger: true,
-      pageSizeOptions: ['10', '20', '50', '100'],
+      pageSizeOptions: ["10", "20", "50", "100"],
       showTotal: (total: number) => `Total ${total} items`,
       ...params.pagination,
     },
@@ -30,11 +30,11 @@ export const handleTableChange = <T>(
   filters: Record<string, FilterValue | null>,
   sorter: SorterResult<T> | SorterResult<T>[],
   setTableParams: React.Dispatch<React.SetStateAction<TableParams<T>>>,
-  onFilterChange?: (filters: Record<string, any>) => void
+  onFilterChange?: (filters: Record<string, unknown>) => void
 ) => {
   const sorterResult = Array.isArray(sorter) ? sorter[0] : sorter;
-  
-  setTableParams(prev => ({
+
+  setTableParams((prev) => ({
     ...prev,
     pagination: {
       ...prev.pagination,
@@ -45,10 +45,11 @@ export const handleTableChange = <T>(
       ...prev.filters,
       ...filters,
     },
-    ...(sorterResult.field && {
-      sortField: sorterResult.field,
-      sortOrder: sorterResult.order,
-    }),
+    ...(typeof sorterResult.field === "string" &&
+      (sorterResult.field as keyof T) && {
+        sortField: sorterResult.field as keyof T,
+        sortOrder: sorterResult.order,
+      }),
   }));
 
   if (onFilterChange) {
